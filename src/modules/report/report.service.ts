@@ -344,6 +344,9 @@ export const userReport = async (
     .sort({ paymentDate: -1 })
     .skip((input.page - 1) * input.limit)
     .limit(input.limit);
+  const payerIds = [...new Set(payments.flatMap((payment) => (payment.paidById ? [payment.paidById.toString()] : [])))];
+  const payers = payerIds.length ? await User.find({ _id: { $in: payerIds } }).select("name") : [];
+  const payerNames = new Map(payers.map((person) => [person._id.toString(), person.name]));
   return {
     user: { id: profile._id.toString(), name: profile.name, email: profile.email },
     totals: summary.totals,
@@ -358,6 +361,7 @@ export const userReport = async (
       status: payment.status,
       note: payment.note,
       paidAt: payment.paidAt ?? null,
+      paidByName: payment.paidById ? payerNames.get(payment.paidById.toString()) ?? null : null,
     })),
     page: input.page,
     limit: input.limit,
